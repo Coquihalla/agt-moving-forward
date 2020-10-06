@@ -1,0 +1,24 @@
+#+TITLE: Documentation for Artifact Evaluation Committee
+#+AUTHOR: Felipe Bañados Schwerter
+
+* List of claims
+  /This list should list all claims made in the paper, referencing the/
+  /claim in the paper, the portion in the artifact evaluating that/
+  /claim, and evaluation instructions for evaluating that claim./
+
+  1. Theorem 6.4 claims that forward-completeness suffices for
+     associativity of evidence composition and that there exists a
+     generalized Coq mechanization of this property.
+
+  2. Theorem 7.4 claims a bound for the size of evidence composition
+     in the BRR language.  The height bounds in Lemma 7.3 and Theorem
+     7.4 are proven in Coq.
+
+* Download, installation, and sanity-testing
+  /Complete instructions for obtaining a copy of the artifact/
+  /and ensuring it works./
+
+  /Helper scripts/
+
+* Evaluation instructions
+* Additional artifact description
