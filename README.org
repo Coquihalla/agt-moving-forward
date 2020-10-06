@@ -1,0 +1,33 @@
+#+TITLE: Artifacts for paper
+
+Current organization of folder:
+
+** ~_CoqProject~
+  Configuration file for Coq.  This file nicely works with Proof
+  General to give access to the libraries.
+
+** ~libraries/~
+  This folder contains all the files that are independent from the
+  particular paper's claims.  e.g. Results about modelling of Sets in
+  Coq, the Hint Databases for "math" (The "lia" theory (linear integer
+  arithmetic. Omega has been deprecated), but saying "eauto with math"
+  makes more sense to me in the code).
+
+  Thanks to the ~_CoqProject~ file these can be accessed from other
+  Coq files in the project under the *PoplLibraries* namespace.
+
+** ~agt/~
+  Currently only the spec development.
+  All coq files should be moved there before submission.
+
+** ~gradual_rows_interpreter.rkt~
+   An interpreter for the gradual rows language as presented in the
+   paper.
+
+** ~bounded_rows_interpreter.rkt~
+   Interpreter for RL with modified evidences.  This interpreter is
+   not space efficient.
+
+** ~bounded_rows_space_efficient_interpreter.rkt~
+   Interpreter for RL+ with Bounded Records and Rows (BRR) This
+   interpreter is space efficient.

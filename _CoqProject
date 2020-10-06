@@ -1,0 +1,9 @@
+-R libraries/ PoplLibraries
+-R agt/ AGT
+-arg -w
+-arg all
+libraries/Math.v
+libraries/Setoid_library.v
+libraries/Recursion.v
+libraries/Mutual_wf_fix.v
+space_efficiency_in_brr.v
