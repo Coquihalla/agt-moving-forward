@@ -580,10 +580,102 @@ Qed.
 
 Hint Resolve sig_eq_refl sig_eq_sym sig_eq_trans : setoids.
 
+  Instance sigeq_rel_refl (E : Type) (P : E -> Prop) (rel : relation E) (Rec : Reflexive rel)  : Reflexive (@sig_eq _ P rel).
+  eapply sig_eq_refl.
+  eauto.
+  Defined.
+
+  Instance sigeq_rel_trans (E : Type) (P : E -> Prop) (rel : relation E) (Rec : Transitive rel)  : Transitive (@sig_eq _ P rel).
+  eapply sig_eq_trans.
+  eauto.
+  Defined.
+
+
 Instance sig_eq_rel (A : Type) (P : A -> Prop) (relA : relation A)  (Equiv_a : Equivalence relA)   : Equivalence (@sig_eq A P relA).
 inversion Equiv_a.
 eauto with setoids.
 Defined.
+
+
+Definition sigT2_eq {A B : Type} {P : A -> B -> Prop} (eqA : relation A) (eqB : relation B)
+  : relation {x : A & {y : B | P x y}}.
+  intros x.
+  intros x'.
+  destruct x.
+  destruct x'.
+  destruct s.
+  destruct s0.
+  exact (eqA x x0 /\ eqB x1 x2).
+Defined.
+
+Lemma sigT2_eq_refl {A B : Type} {P : A -> B -> Prop} (eqA : relation A) (eqB : relation B) :
+  Reflexive eqA ->
+  Reflexive eqB ->
+  Reflexive (@sigT2_eq A B P eqA eqB).
+Proof.
+  intros.
+  intro x.
+  unfold sigT2_eq.
+  destruct x.
+  destruct s.
+  eauto.
+Qed.
+
+Lemma sigT2_eq_sym {A B : Type} { P : A -> B -> Prop} (eqA : relation A) (eqB : relation B):
+  Symmetric eqA ->
+  Symmetric eqB ->
+  Symmetric (@sigT2_eq A B P eqA eqB).
+Proof.
+  intros.
+  intros x y H'.
+  destruct x.
+  destruct y.
+  destruct s.
+  destruct s0.
+  unfold sigT2_eq in *.
+  destruct H'.
+  eauto.
+Qed.    
+
+Lemma sigT2_eq_trans {A B : Type} {P : A -> B -> Prop} (eqA : relation A) (eqB : relation B):
+  Transitive eqA ->
+  Transitive eqB ->
+  Transitive (@sigT2_eq A B P eqA eqB).
+Proof.
+  intros.
+  intros x y z.
+  intros.
+  unfold sigT2_eq in *.
+  destruct x.
+  destruct y.
+  destruct z.
+  destruct s.
+  destruct s0.
+  destruct s1.
+  destruct H1.
+  destruct H2.
+  eauto.
+Qed.  
+
+Hint Resolve sigT2_eq_refl sigT2_eq_sym sigT2_eq_trans : setoids.
+
+Instance sigT2_eq_rel_refl (A B : Type) (P : A -> B -> Prop) (relA : relation A) (relB : relation B) (RecA : Reflexive relA) (RecB : Reflexive relB) : Reflexive (@sigT2_eq _ _ P relA relB).
+eapply sigT2_eq_refl;
+  eauto.
+Defined.
+
+Instance sigT2_eq_rel_trans (A B : Type) (P : A -> B -> Prop) (relA : relation A) (relB : relation B) (RecA : Transitive relA) (RecB : Transitive relB)  : Transitive (@sigT2_eq _ _ P relA relB).
+  eapply sigT2_eq_trans;
+  eauto.
+  Defined.
+
+
+Instance sigT2_eq_rel (A B : Type) (P : A -> B -> Prop) (relA : relation A) (relB : relation B) (Equiv_a : Equivalence relA) (Equiv_b : Equivalence relB)  : Equivalence (@sigT2_eq A B P relA relB).
+inversion Equiv_a.
+inversion Equiv_b.
+eauto with setoids.
+Defined.
+
 
 Add Parametric Morphism A eqs `{Equivalence _ eqs}: (@Singleton A )
     with signature eqs ==> Seteq eqs as Singleton_mor.
@@ -1082,16 +1174,6 @@ Defined.
   eauto.
   Defined.
 
-  Instance sigeq_rel_refl (E : Type) (P : E -> Prop) (rel : relation E) (Rec : Reflexive rel)  : Reflexive (@sig_eq _ P rel).
-  eapply sig_eq_refl.
-  eauto.
-  Defined.
-
-  Instance sigeq_rel_trans (E : Type) (P : E -> Prop) (rel : relation E) (Rec : Transitive rel)  : Transitive (@sig_eq _ P rel).
-  eapply sig_eq_trans.
-  eauto.
-  Defined.
-
   Instance pair_eq_rel_refl (A B : Type)  (relA : relation A) (relB : relation B) (RecA : Reflexive relA) (RecB : Reflexive relB) : Reflexive (pair_eq relA relB).
   eapply pair_eq_refl;
   eauto.
@@ -1101,6 +1183,10 @@ Defined.
   eapply pair_eq_trans;
   eauto.
   Defined.
+
+Instance Included_trans (A : Type) : Transitive (Included A).
+eapply Inclusion_is_transitive.
+Defined.
 
 Hint Constructors Equivalence : setoids.
 

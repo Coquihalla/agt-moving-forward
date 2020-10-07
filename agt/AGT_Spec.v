@@ -6,96 +6,35 @@ Set Bullet Behavior "Strict Subproofs".
 Require Import PoplLibraries.Math.
 Require Import PoplLibraries.Setoid_library.
 (* This file contains the Galois Connection proofs *)
-
-Require Import Classical.
-
+   
 Module Type AGT_Inputs.
   (* This definuition is based upon the section "The Essence of AGT" and is intended to mirror it. *)
 
   (* We require a definition of Static Types *)
   Parameter ST : Set.
-
-  Parameter ST_eq : relation ST.
-
-  Parameter ST_eq_refl : Reflexive ST_eq.
-  Parameter ST_eq_sym : Symmetric ST_eq.
-  Parameter ST_eq_trans : Transitive ST_eq.
-
-  Hint Resolve ST_eq_refl ST_eq_sym ST_eq_trans : setoids.
-  
-  Add Parametric Relation : ST ST_eq
-      reflexivity  proved by ST_eq_refl
-      symmetry     proved by ST_eq_sym
-      transitivity proved by ST_eq_trans
-  as ST_eq_rel.
      
   (* And a definition of Gradual Types. Our model is parameterized by these. *)
   Parameter GT : Set.
-
-  Parameter GT_eq : relation GT.
-  Parameter GT_eq_refl : Reflexive GT_eq.
-  Parameter GT_eq_sym : Symmetric GT_eq.
-  Parameter GT_eq_trans : Transitive GT_eq.
-
-  Hint Resolve GT_eq_refl GT_eq_sym GT_eq_trans : setoids.
-  
-  Add Parametric Relation : GT GT_eq
-      reflexivity  proved by GT_eq_refl
-      symmetry     proved by GT_eq_sym
-      transitivity proved by GT_eq_trans
-        as GT_eq_rel.
   
   (* We follow the "from scratch" approach, where concretization is defined by recursion on the structure of gradual types,
      and where then the precision relation is inferred. *)
   
   Parameter gamma : GT -> Ensemble ST. (* Note, Ensembles, are a representation of Sets in Coq *)
-
-  Parameter gamma_compat :
+  
+  (*Parameter gamma_compat_dual :
     forall x x' : GT,
-      GT_eq x x' ->
-      Seteq ST_eq (gamma x) (gamma x').
-
-  Hint Resolve gamma_compat : setoids.
-  
-  Parameter gamma_compat_dual :
-    forall x x' : GT,
-      Seteq ST_eq (gamma x) (gamma x') ->
-      GT_eq x x'.
-  
-  Add Parametric Morphism : gamma
-      with signature GT_eq ==> (Seteq ST_eq) as gamma_mor.
-  Proof.
-    exact gamma_compat.
-  Qed.
-
-  Add Parametric Relation : (Ensemble ST) (Seteq ST_eq)
-      reflexivity  proved by (Seteq_refl ST_eq_refl)
-      symmetry     proved by (Seteq_sym)
-      transitivity proved by (Seteq_trans ST_eq_trans)
-  as Ensemble_ST_eq_rel.
-
-  Add Parametric Relation : (Ensemble GT) (Seteq GT_eq)
-      reflexivity  proved by (Seteq_refl GT_eq_refl)
-      symmetry     proved by (Seteq_sym)
-      transitivity proved by (Seteq_trans GT_eq_trans)
-  as Ensemble_GT_eq_rel.
-                                            
-  Parameter gamma_spec : forall x,
-      exists y, SetIn ST_eq (gamma x) y.
-  
-  Definition less_imprecise (S_1 S_2 : GT) :=
-    Subseteq ST_eq (gamma S_1) (gamma S_2). (* Proposition 3.1 *)
-
-  Add Parametric Relation : (Ensemble GT) (Subseteq GT_eq)
-      reflexivity  proved by (subseteq_refl GT_eq_refl)
-      transitivity proved by (subseteq_trans GT_eq_trans)
-        as Ensemble_GT_subseteq_rel.
-
-  Add Parametric Relation : (Ensemble ST) (Subseteq ST_eq)
-      reflexivity  proved by (subseteq_refl ST_eq_refl)
-      transitivity proved by (subseteq_trans ST_eq_trans)
-        as Ensemble_ST_subseteq_rel.  
-  
+      (gamma x) = (gamma x') ->
+      x = x'.*)
+  (*
+  Definition partial_gamma (x : option GT) : Ensemble ST :=
+    match x with
+    | Some x => gamma x
+    | None => Empty_set _
+    end.
+    *)  
+  (*Definition less_imprecise (S_1 S_2 : GT) :=
+    Included _ (gamma S_1) (gamma S_2). (* Proposition 3.1 *)
+  *)
   (* While we could have followed a "define alpha as well" approach,
      we will try here to be as consistent with the paper as possible,
      which relies instead on a definition of meet and generates for you a definition of alpha, which is the one we will use.
@@ -103,87 +42,50 @@ Module Type AGT_Inputs.
 
   Parameter meet : GT -> GT -> option GT.
 
-
-  Parameter meet_compat :
-    forall x x' : GT,
-      GT_eq x x' ->
-      forall y y' : GT,
-        GT_eq y y' ->
-        option_eq GT_eq (meet x y) (meet x' y').
-
-  Hint Resolve meet_compat : setoids.
-  
-  Add Parametric Morphism : meet
-      with signature GT_eq ==> GT_eq ==> option_eq GT_eq as meet_mor.
-  Proof.
-    exact meet_compat.
-  Qed.
-
-  
+  (* Might be necessary, but not yet.
+     Parameter meet_sym : forall (S_1 S_2 : GT),
+      meet S_1 S_2 = meet S_2 S_1.
+   *)
+    
   Parameter meet_spec_1 : forall (S_1 S_2 S_3: GT),
-      option_eq GT_eq (meet S_1 S_2) (Some S_3) ->
-      Seteq ST_eq (gamma S_3)
-            (Intersection ST_eq (gamma S_1) (gamma S_2)).
+      (meet S_1 S_2) = (Some S_3) ->
+      (gamma S_3) =
+            (Ensembles.Intersection _ (gamma S_1) (gamma S_2)).
 
   Parameter meet_spec_2 : forall S_1 S_2,
-      option_eq GT_eq (meet S_1 S_2) None ->
-      Seteq ST_eq (Empty_set _)
-            (Intersection ST_eq (gamma S_1) (gamma S_2)).
+      (meet S_1 S_2) = None ->
+      (Empty_set _) =
+      (Ensembles.Intersection _ (gamma S_1) (gamma S_2)).
   
   (* Our spec for alpha is according to the paper : *)
 
   (* These definitions of lower_bound and greatest lower bound are 
      not necessary, but I keep them here for reference : *)
-
-  Definition all_bigger_types (C : Ensemble ST) : Ensemble GT := (fun X => Subseteq ST_eq C (gamma X)).
-
-  Add Parametric Morphism : all_bigger_types
-      with signature (Seteq ST_eq) ==> (Seteq GT_eq) as all_bigger_types_mor.
-  Proof with eauto with setoids.
-    intros.
-    unfold all_bigger_types.
-    split.
-    all: intro x'.
-    all: unfold In.
-    all: intros.
-    - eapply SetIn_seteq_mor...
-      eapply Seteq_extensionality...
-      intros.
-      eapply SetIn_mor...
-      intros a b H'...
-      rewrite H'.
-      rewrite H.
-      reflexivity.
-    - eapply SetIn_seteq_mor...
-      eapply Seteq_extensionality...
-      intros.
-      eapply SetIn_mor...
-      intros a b H'...
-      rewrite H'.
-      rewrite H.
-      reflexivity.
-  Qed.
+(*
+  Definition all_bigger_types (C : Ensemble ST) : Ensemble GT := (fun X => Included _ C (gamma X)).
   
     (* Backtracking : I need to go back and make better and stronger use of the generalized rewriting features.  In particular, I do need stuff to work in previous cases (For example, subseteq must be made a morphism, etc. *)
   
   Definition lower_bound (S : Ensemble GT) (a : GT) : Prop :=
-    forall (x : GT), SetIn GT_eq S x -> less_imprecise a x.
+    forall (x : GT), Ensembles.In _ S x -> less_imprecise a x.
   
   Definition greatest_lower_bound (S : Ensemble GT) (a : GT) : Prop :=
     (lower_bound S a) /\ (forall k, lower_bound S k -> less_imprecise k a).
-  
+*)
+  (*
+  (* I think this is a key that we have not expressed before. *)
   Parameter all_bigger_types_has_greatest_lower_bound :
     forall (C : Ensemble ST),
     exists a,
       (greatest_lower_bound (all_bigger_types C) a)
-  .
+  .*)
     
-  Parameter glb_is_minimum : forall (C : Ensemble ST),
+  (*Parameter glb_is_minimum : forall (C : Ensemble ST),
       forall a,
         (greatest_lower_bound (all_bigger_types C) a) ->
-        SetIn GT_eq (all_bigger_types C) a.
+        Ensembles.In _ (all_bigger_types C) a.*)
   
-  Inductive alpha : Ensemble ST -> GT -> Prop :=
+  (*Inductive alpha : Ensemble ST -> GT -> Prop :=
   | alpha_constructor :
       forall C out,
         (* out is a lower bound *)
@@ -191,83 +93,7 @@ Module Type AGT_Inputs.
         greatest_lower_bound (all_bigger_types C) out ->
         alpha C out.
 
-  Hint Constructors alpha : setoids.
-
-
-  Add Parametric Morphism : less_imprecise
-      with signature GT_eq ==> GT_eq ==> iff as less_imprecise_mor.
-  Proof.
-    intros.
-    split; intros; unfold less_imprecise in *.
-    rewrite <- H.
-    rewrite <- H0.
-    eauto.
-    rewrite H.
-    rewrite H0.
-    eauto.
-  Qed.    
-  
-  Add Parametric Morphism : lower_bound
-      with signature (Seteq GT_eq) ==> GT_eq ==> iff as lower_bound_mor.
-  Proof with eauto with setoids.
-    intros.
-    split; intros.
-    all: unfold lower_bound in *.
-    all: intros.
-    all: apply H in H2.
-    all: apply H1 in H2.
-    - rewrite H0 in H2...
-    - rewrite <- H0 in H2...
-  Qed.      
-    
-  Add Parametric Morphism : greatest_lower_bound
-      with signature (Seteq GT_eq) ==> GT_eq ==> iff as greatest_lower_bound_mor.
-  Proof with eauto with setoids.
-    intros.
-    split; intros...
-    all: inversion H1.
-    all: constructor.
-    - rewrite <- H.
-      rewrite <- H0...
-    - intros.
-      rewrite <- H0.
-      eapply H3.
-      rewrite H...
-    - rewrite H.
-      rewrite H0...
-    - intros.
-      rewrite H0.
-      eapply H3.
-      rewrite <- H...
-  Qed.
-  
-  Add Parametric Morphism : alpha 
-      with signature (Seteq ST_eq) ==> GT_eq ==> iff as alpha_mor.
-  Proof with eauto with setoids.
-    intros.
-    split.
-    all: intros.
-    all: inversion H1.
-    all: subst.
-    - econstructor.
-      inversion H2.
-      apply In_SetIn with (eqb:=ST_eq) in H4...
-      apply H in H4.
-      repeat destruct H4...
-      econstructor; apply H5.
-
-      rewrite <- H.
-      rewrite <- H0...
-    - econstructor.
-      inversion H2.
-      apply In_SetIn with (eqb:=ST_eq) in H4...
-      apply H in H4.
-      repeat destruct H4.
-      econstructor; apply H5.
-
-      rewrite H.
-      rewrite H0...
-  Qed.
+  Hint Constructors alpha : setoids.*)
     
   (* Now we introduce a predicate over static types *)
 
@@ -288,58 +114,65 @@ Module Type AGT_Inputs.
       transitivity proved by (static_pred_trans)
         as static_pred_rel.  
  
-  Definition gradual_pred (S_1 S_2 : GT) : Prop :=
+  (*Definition gradual_pred (S_1 S_2 : GT) : Prop :=
     exists T_1 T_2,
-      SetIn ST_eq (gamma S_1) T_1 /\
-      SetIn ST_eq (gamma S_2) T_2 /\
+      Ensembles.In _ (gamma S_1) T_1 /\
+      Ensembles.In _ (gamma S_2) T_2 /\
       static_pred T_1 T_2. (* Proposition 2.2 *)
-
+*)
   
-  Theorem gc_soundness : forall C S,
+  (*Theorem gc_soundness : forall C S,
       alpha C S ->
-      Subseteq ST_eq C (gamma S).
+      Included _ C (gamma S).
   Proof.
     intros.
     inversion H; subst.
     inversion H1.
     unfold lower_bound in H2.
     eapply glb_is_minimum in H1.
-    repeat destruct H1.
-    rewrite H1.
     eauto.
-  Qed.
+  Qed.*)
 
-  Hint Resolve gc_soundness : setoids.
+  (*Hint Resolve gc_soundness : setoids.*)
   
   Parameter Ev : Set.
 
   (* While we could do Evidence equivalence a parameter, I instead define it in terms of projections, as that seems to be the most useful at this point *)
   Parameter proj1_ev : Ev -> GT.
   Parameter proj2_ev : Ev -> GT.
+
+  Definition Ev_static_set := Ensemble { x : ST & {y : ST | static_pred x y }}.
   
+  Parameter gamma_ev : Ev -> Ev_static_set.
+
   Inductive Ev_eq : relation Ev :=
   | Ev_eq_intro : forall e e',
-      GT_eq (proj1_ev e) (proj1_ev e') ->
-      GT_eq (proj2_ev e) (proj2_ev e') ->
+      Same_set _ (gamma_ev e) (gamma_ev e') ->
       Ev_eq e e'.
 
   Hint Constructors Ev_eq : setoids.
+
   Lemma Ev_eq_refl : Reflexive Ev_eq.
-  Proof.
+  Proof with eauto.
     econstructor;
     eauto with setoids.
+    split; intros elem H...
   Qed.    
 
   Lemma Ev_eq_sym : Symmetric Ev_eq.
-  Proof.
-    econstructor; inversion H;
-    eauto with setoids.
+  Proof with eauto with setoids.
+    econstructor; inversion H.
+    inversion H0; subst.
+    split...
   Qed.    
 
   Lemma Ev_eq_trans : Transitive Ev_eq.
-  Proof.
-    econstructor; inversion H; inversion H0;
-    eauto with setoids.
+  Proof with eauto with setoids.
+    econstructor; inversion H; inversion H0...
+    all: subst.
+    all: inversion H1; inversion H4.
+    split;
+    transitivity (gamma_ev y)...
   Qed.    
 
   Hint Resolve Ev_eq_refl Ev_eq_sym Ev_eq_trans : setoids.
@@ -349,182 +182,199 @@ Module Type AGT_Inputs.
       symmetry     proved by Ev_eq_sym
       transitivity proved by Ev_eq_trans
   as Ev_eq_rel.
-
-  Parameter static_pred_compat : 
-      forall x x' : ST,
-        ST_eq x x' ->
-        forall y y' : ST,
-          ST_eq y y' ->
-          (static_pred x y <-> static_pred x' y').
-
-  Hint Resolve static_pred_compat : setoids.
-  
-  Add Parametric Morphism : static_pred
-      with signature ST_eq ==> ST_eq ==> iff as static_pred_mor.
-  Proof.
-    exact static_pred_compat.
-  Qed.
-
-  Definition Ev_static_set := Ensemble { x : ST * ST | static_pred (fst x) (snd x) }.
-
-
-  
-  Parameter gamma_ev : Ev -> Ev_static_set.
-
-  Parameter gamma_ev_compat:
-    forall e e' : Ev,
-      Ev_eq e e' ->
-      Seteq (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev e) (gamma_ev e').
-
-  Parameter gamma_ev_compat_dual :
-    forall e e' : Ev,
-      Seteq (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev e) (gamma_ev e') ->
-      Ev_eq e e'.
-  
-  
-  Hint Resolve gamma_ev_compat : setoids.
-  
+    
+  (*Hint Resolve gamma_ev_compat : setoids.*)
+  (*
   Add Parametric Morphism : gamma_ev
-      with signature Ev_eq ==> (Seteq (sig_eq (pair_eq ST_eq ST_eq))) as gamma_ev_mor.
+      with signature Ev_eq ==> eq as gamma_ev_mor.
   Proof.
     exact gamma_ev_compat.
-  Qed.
-      
+  Qed.*)
+
   Parameter gamma_ev_spec_l : forall ev x,
-      SetIn (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev ev) x ->
-      SetIn ST_eq (gamma (proj1_ev ev)) (fst (proj1_sig x)).
+      Ensembles.In _ (gamma_ev ev) x ->
+      Ensembles.In _ (gamma (proj1_ev ev)) (projT1 x).
 
   Parameter gamma_ev_spec_r : forall ev x,
-      SetIn (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev ev) x ->
-      SetIn ST_eq (gamma (proj2_ev ev)) (snd (proj1_sig x)).
+      Ensembles.In _  (gamma_ev ev) x ->
+      Ensembles.In _ (gamma (proj2_ev ev)) (proj1_sig (projT2 x)).
   
-  Parameter alpha_ev : Ensemble { x : ST * ST | static_pred (fst x) (snd x) } -> Ev -> Prop.
+  Parameter alpha_ev : Ensemble { x : ST & {y : ST | static_pred x y}} -> Ev -> Prop.
 
-  Parameter alpha_ev_compat : forall (s1 s2 : Ensemble { x : ST * ST | static_pred (fst x) (snd x) }),
-      Seteq (sig_eq (pair_eq ST_eq ST_eq)) s1 s2 ->
+  (*Parameter alpha_ev_compat : forall (s1 s2 : Ensemble { x : ST & { y : ST | static_pred  x y }}),
+      s1 = s2 ->
       forall (e1 e2 : Ev),
         Ev_eq e1 e2 ->
-        (alpha_ev s1 e1 <-> alpha_ev s2 e2).
+        (alpha_ev s1 e1 <-> alpha_ev s2 e2).*)
 
-  Hint Resolve gamma_ev_spec_l gamma_ev_spec_r alpha_ev_compat : setoids.
+  Hint Resolve gamma_ev_spec_l gamma_ev_spec_r : setoids.
   
-  Add Parametric Morphism : alpha_ev
-      with signature (Seteq (sig_eq (pair_eq ST_eq ST_eq)) ==> Ev_eq ==> iff) as alpha_ev_mor.
+  (*Add Parametric Morphism : alpha_ev
+      with signature (eq ==> Ev_eq ==> iff) as alpha_ev_mor.
   Proof.
-    exact alpha_ev_compat.
-  Qed.
+    intros.
+    eapply alpha_ev_compat; auto.
+  Qed.*)
     
-
-  Parameter static_pred_dec : forall T_1 T_2,
-      {static_pred T_1 T_2} + {~ static_pred T_1 T_2}.
+  (* There's a note on page 18 defining interior as follows: *)
   
   Definition interior : GT -> GT -> Ev -> Prop :=
     fun (S_1 S_2 : GT) (ev : Ev) =>
       alpha_ev
-        (fun (X : {x : ST * ST | static_pred (fst x) (snd x)}) =>
-           SetIn ST_eq (gamma S_1) (fst (proj1_sig X)) /\
-           SetIn ST_eq (gamma S_2) (snd (proj1_sig X))
+        (fun (X : {x : ST & { y : ST | static_pred x y}}) =>
+           Ensembles.In _ (gamma S_1) (projT1 X) /\
+           Ensembles.In _ (gamma S_2) (proj1_sig (projT2 X))
                  (* Note: There is a proof of static_pred carried in the input,
                     so I don't need to check for it here *)
         )
-                 ev.
+        ev.
 
-  Parameter ev_self_interior : forall (e : Ev),
+  (*Parameter ev_self_interior : forall (e : Ev),
       interior (proj1_ev e) (proj2_ev e) e.
 
-  Hint Resolve ev_self_interior : setoids.
+  Hint Resolve ev_self_interior : setoids.*)
 
   (* This definition must make use of equality relations over A as well. *)
   
-  Definition relational_composition {A : Type} {P : A * A -> Prop}
-             (eq : relation A)
-             (R1 : Ensemble {x : A * A | P x})
-             (R2 : Ensemble {x : A * A | P x}) : Ensemble {x : A * A | P x} :=
-    fun (elem : {x : A * A | P x}) =>
-      exists T_2 T'_l T'_r (W_l : P T'_l) (W_r : P T'_r),
-        SetIn (sig_eq (pair_eq eq eq)) R1 (exist _ T'_l W_l) /\
-        SetIn (sig_eq (pair_eq eq eq)) R2 (exist _ T'_r W_r) /\
-        (pair_eq eq eq (fst (proj1_sig elem), T_2) T'_l) /\
-        (pair_eq eq eq (T_2, (snd (proj1_sig elem))) T'_r) .
-    
+  Definition relational_composition {A : Type} {P : A -> A -> Prop}
+             (R1 : Ensemble {x : A & {y : A | P x y}})
+             (R2 : Ensemble {x : A & {y : A | P x y}}) : Ensemble {x : A & { y : A | P x y }} :=
+    fun (elem : {x : A & {y : A | P x y}}) =>
+      exists T_2 (W_l : P (projT1 elem) T_2) (W_r : P T_2 (proj1_sig (projT2 elem))),
+        Ensembles.In _ R1 (existT _ _ (exist _ _ W_l)) /\
+        Ensembles.In _ R2 (existT _ _ (exist _ _ W_r)).
+  
   Definition consistent_transitivity (e1 e2 e3 : Ev) : Prop :=
     (* Id+ is implicit through the requirement of inhabitance in alpha *)
-    alpha_ev (relational_composition ST_eq (gamma_ev e1) (gamma_ev e2)) e3.
+    alpha_ev (relational_composition (gamma_ev e1) (gamma_ev e2)) e3.
   
-  Parameter gamma_completeness : forall e1 e2 e3,
+  Parameter forward_completeness : forall e1 e2 e3,
       consistent_transitivity e1 e2 e3 ->
-      (Seteq (sig_eq (pair_eq ST_eq ST_eq))
-             (relational_composition ST_eq (gamma_ev e1) (gamma_ev e2))
-       (gamma_ev e3)).
+      (relational_composition (gamma_ev e1) (gamma_ev e2)) =
+       (gamma_ev e3).
 
   Parameter gc_ev_optimality : forall C S,
-      Subseteq (sig_eq (pair_eq ST_eq ST_eq)) C (gamma_ev S) ->
+      Included _ C (gamma_ev S) ->
       forall S',
         alpha_ev C S' ->
-        Subseteq (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev S') (gamma_ev S).
+        Included _ (gamma_ev S') (gamma_ev S).
   
   Parameter gc_ev_soundness : forall C S,
       alpha_ev C S ->
-      Subseteq (sig_eq (pair_eq ST_eq ST_eq)) C (gamma_ev S).
+      Included _ C (gamma_ev S).
 
   Parameter proj1_ev_spec : forall ev x,
-      SetIn ST_eq (gamma (proj1_ev ev)) x ->
+      Ensembles.In _ (gamma (proj1_ev ev)) x ->
       exists (x' : ST) (H : static_pred x x'),
-        SetIn (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev ev)
-              (exist _ (x, x') H).
+        Ensembles.In _ (gamma_ev ev)
+              (existT _ _ (exist _ _ H)).
   
   Parameter proj2_ev_spec : forall ev x,
-      SetIn ST_eq (gamma (proj2_ev ev)) x ->
+      Ensembles.In _ (gamma (proj2_ev ev)) x ->
       exists (x' : ST) (H : static_pred x' x),
-        SetIn (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev ev)
-              (exist _ (x', x) H).
+        Ensembles.In _  (gamma_ev ev)
+              (existT _ _ (exist _ _ H)).
 
-  Parameter closedness : forall ( AB BC : Ev),
-      forall (proj_based : Ev),
-        interior (proj1_ev AB) (proj2_ev BC) proj_based ->
-        (Subseteq (sig_eq (pair_eq ST_eq ST_eq))
-                  (gamma_ev proj_based)
-                  (relational_composition ST_eq (gamma_ev AB) (gamma_ev BC))).
-
+  Parameter closedness:
+    forall S1 S2 e1 e2 e3 (H : static_pred (projT1 e1) (proj1_sig (projT2 e2))),
+      Ensembles.In _ S1 e1 ->
+      Ensembles.In _ S2 e2 ->      
+      sigT2_eq eq eq (existT _ _ (exist _ _ H)) e3 ->
+      Ensembles.In _ (relational_composition S1 S2) e3.
+  
   (* This parameter is sort of a proof irrelevance parameter. *)
-  Parameter gamma_ev_spec' : forall ev x,
-      SetIn ST_eq (gamma (proj1_ev ev)) (fst x) ->
-      SetIn ST_eq (gamma (proj2_ev ev)) (snd x) ->
-      forall (H : static_pred (fst x) (snd x)),
-        SetIn (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev ev) (exist _ x H).
+  Parameter gamma_ev_proof_irrelevance : forall ev x y,
+      Ensembles.In _ (gamma (proj1_ev ev)) x ->
+      Ensembles.In _ (gamma (proj2_ev ev)) y ->
+      forall (H : static_pred x y),
+        Ensembles.In _ (gamma_ev ev) (existT _ _ (exist _ _ H)).
 
-  Hint Resolve gamma_completeness gc_ev_optimality gc_ev_soundness proj1_ev_spec proj2_ev_spec : setoids.
+  Hint Resolve forward_completeness gc_ev_optimality gc_ev_soundness proj1_ev_spec proj2_ev_spec : setoids.
 
 End AGT_Inputs.
 
-Module AGT_Spec (AGT : AGT_Inputs).
+Module AGT_Spec_simpl (AGT : AGT_Inputs).
   Import AGT.
 
-  Instance exist_iff_morphism :
+  (* Note: This line is the likely the most advanced use of Generalized Rewriting and morphisms that we have so far,
+     BECAUSE WE NEED TO INTRODUCE DEPENDENCY FOR STATIC_PRED!
+     Thus we cannot just use ==>, which is syntactic sugar for non-dependent "respectful"        morphisms.
+     (See re spectful in Coq.Classes.Morphisms)
+     
+     Thus we must instead use here directly a respectful_hetero *)
+
+  (* Key for this is understanding the following expansion.
+
+     R ==> R' expands to (where R : relation A and R': relation B, producing relation (A -> B))
+     (@respectful _ _ (R %signature) (R'%signature)), which expands to
+     Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
+   
+   Therefore, what originally should have been something like
+   (pair_eq ST_eq ST_eq) ==> //dependent relation on static_pred over the terms of pair_eq// ==> (@sig_eq ...)
+
+   Becomes: *)
+
+(*  Instance exist_iff_morphism :
+    Proper (@respectful_hetero _ _
+                               (*(fun x => (static_pred (fst x) (snd x)) -> {x : ST * ST | static_pred (fst x) (snd x)})*) _
+                               (*(fun x => (static_pred (fst x) (snd x)) -> {x : ST * ST | static_pred (fst x) (snd x)})*) _
+                               (pair_eq ST_eq ST_eq)
+                               (** must have type
+                                   forall x y : ST * ST,
+                                   (fun x0 : ST * ST => static_pred (fst x0) (snd x0) -> {x1 : ST * ST | static_pred (fst x1) (snd x1)}) x ->
+                                   (fun x0 : ST * ST => static_pred (fst x0) (snd x0) -> {x1 : ST * ST | static_pred (fst x1) (snd x1)}) y -> Prop
+                                **)
+                               (fun x y =>
+                                  (**
+                                     (sig_eq (pair_eq ST_eq ST_eq)) is the destination type we want, we need to make by hand, something of the likes of
+                                     iff ==> (sig_eq (pair_eq ST_eq ST_eq))... I thus need to write something lie
+                                   **)
+                                  (@respectful_hetero _ _ _ _ (fun H H0 => ST_eq (fst x) (fst y) /\ ST_eq (snd x) (snd y))
+                                                      (fun _ _ => (sig_eq (pair_eq ST_eq ST_eq)))))
+           )
+           (@exist (ST*ST)%type (fun x => static_pred (fst x) (snd x))) .*)
+
+(*  Instance exist_iff_morphism :
     Proper ((pair_eq ST_eq ST_eq) >==> { x & y } ((fun H H0 => ST_eq (fst x) (fst y) /\ ST_eq (snd x) (snd y)) >==> { _ & _ } (@sig_eq _ (fun x => static_pred (fst x) (snd x)) (pair_eq ST_eq ST_eq))))
            (@exist (ST*ST)%type (fun x => static_pred (fst x) (snd x))).
   Proof.
     simpl_relation.
   Qed.
-  
+ *)
+
+  Hint Constructors Ensembles.Intersection : setoids.
+  Hint Resolve  Intersection_Empty_set_r Intersection_Empty_set_l : setoids.
+  Lemma Intersection_assoc {A : Type}: forall x y z,
+      Ensembles.Intersection A x (Ensembles.Intersection _ y z) =
+      Ensembles.Intersection _ (Ensembles.Intersection _ x y) z.
+  Proof with eauto with setoids.
+    intros.
+    eapply Extensionality_Ensembles.
+    split; intros elem H; inversion H; subst...
+    inversion H1; subst...
+    inversion H0; subst...
+  Qed.    
+
+  (*
   Theorem meet_assoc : forall (S_1 S_2 S_3 : GT),
-      option_eq GT_eq (match (meet S_1 S_2) with
-                 | Some S_12 => meet S_12 S_3
-                 | None => None
-                 end)
-                (match (meet S_2 S_3) with
-                 | Some S_23 => meet S_1 S_23
-                 | None => None
-                 end).
+      partial_gamma (match (meet S_1 S_2) with
+                     | Some S_12 => meet S_12 S_3
+                     | None => None
+                     end)
+      =
+      partial_gamma (match (meet S_2 S_3) with
+                     | Some S_23 => meet S_1 S_23
+                     | None => None
+                     end).
   Proof with eauto with setoids.
     intros.
 
     repeat match goal with
            | [ |- context[meet ?A ?B]] =>
-             let H' := fresh in destruct (meet A B) eqn:H';
-             (let H := fresh in pose proof (option_eq_refl GT_eq_refl (meet A B)) as H;
+             let H' := fresh in destruct (meet A B) eqn:H'(*;*)
+             (*let H := fresh in pose proof (option_eq_refl GT_eq_refl (meet A B)) as H;
                                  rewrite H' in H at 2;
-                                 clear H')
+                                 clear H'*)
            end.
 
       
@@ -534,60 +384,34 @@ Module AGT_Spec (AGT : AGT_Inputs).
                 end.
 
     all: try reflexivity.
-    
-    - econstructor.
-      eapply gamma_compat_dual.
-      rewrite H1.
-      rewrite H3.
-      rewrite H0.
+    all: simpl.
+    - rewrite H0.
       rewrite H2.
+      rewrite H.
+      rewrite H1.
       rewrite Intersection_assoc...
-      reflexivity.
-    - rewrite H0 in H1.
-      rewrite H2 in H3.
-      rewrite Intersection_assoc in H3...
-      rewrite <- H1 in H3.
-      destruct (gamma_spec g0).
-      apply H3 in H.
-      repeat destruct H.
-      eapply except.
-      eapply (Noone_in_empty _ x0)...
-    - rewrite H0 in H1.
-      destruct (gamma_spec g0).
-      rewrite <- Intersection_assoc in H1...
-      apply H1 in H.
-      repeat destruct H.
-      inversion H3.
-      subst.
-      apply H2 in H5.
-      repeat destruct H5.
-      eapply except.
-      eapply (Noone_in_empty _ x1)...
-    - rewrite H0 in H1.
-      rewrite H2 in H3.
-      rewrite Intersection_assoc in H3...
-      rewrite <- H1 in H3.
-      destruct (gamma_spec g1).
-      apply H3 in H.
-      repeat destruct H.
-      eapply except.
-      eapply (Noone_in_empty _ x0)...
-    - rewrite H1 in H2.
-      rewrite Intersection_assoc in H2...
-      rewrite <- H0 in H2.
-      destruct (gamma_spec g0).
-      apply H2 in H.
-      repeat destruct H.
-      inversion H3.
-      subst.
-      repeat destruct H4.
-      eapply except.
-      eapply (Noone_in_empty _ x1)...
+    - rewrite H0.
+      rewrite H2.
+      rewrite H.
+      rewrite H1.
+      rewrite Intersection_assoc...
+    - rewrite H0.
+      rewrite H.
+      rewrite <- Intersection_assoc...
+      rewrite <- H1...
+    - rewrite H2.
+      rewrite H1.
+      rewrite Intersection_assoc...
+      rewrite H in H0...
+    - rewrite H1.
+      rewrite H0.
+      rewrite Intersection_assoc...
+      rewrite <- H...
   Qed.  
-
-  (* Proposition 3.2 should follow *)
+  *)
+  (*(* Proposition 3.2 should follow *)
   Theorem gc_optimality : forall C S,
-      Subseteq ST_eq C (gamma S) ->
+      Included _ C (gamma S) ->
       forall S',
         alpha C S' ->
         less_imprecise S' S.
@@ -601,20 +425,13 @@ Module AGT_Spec (AGT : AGT_Inputs).
     unfold lower_bound in H3.
     intros elem; intros.
     eapply H3 in H5...
-    inversion H1.
-    eexists. split.
-    2 : { 
-      unfold Ensembles.In.
-      eassumption.
-    }
-    reflexivity.
-  Qed.    
+  Qed.    *)
   
   Theorem alpha_ev_li : forall R_1 R_2 S_1 S_2,
-      Subseteq (sig_eq (pair_eq ST_eq ST_eq)) R_1 R_2 ->
+      Included _ R_1 R_2 ->
       alpha_ev R_1 S_1 ->
       alpha_ev R_2 S_2 ->
-      Subseteq (sig_eq (pair_eq ST_eq ST_eq)) (gamma_ev S_1)
+      Included _ (gamma_ev S_1)
                (gamma_ev S_2).
   Proof.
     intros.
@@ -631,18 +448,18 @@ Module AGT_Spec (AGT : AGT_Inputs).
    *)
 
   (* This theorem is unused, maybe will be relevant later. *)
-  Theorem glb_membership : forall A T,
+  (*Theorem glb_membership : forall A T,
       greatest_lower_bound A T ->
-      forall y ,  SetIn GT_eq A y ->
-                  Subseteq ST_eq (gamma T) (gamma y).
+      forall y ,  Ensembles.In _ A y ->
+                  Included _ (gamma T) (gamma y).
   Proof with eauto with setoids.
     intros.
     inversion H.
     apply H1 in H0...
   Qed.        
-
-  Lemma meet_left : forall S_1 S_2 S_3,
-      option_eq GT_eq (meet S_1 S_2) (Some S_3) ->
+  *)
+  (*Lemma meet_left : forall S_1 S_2 S_3,
+      (meet S_1 S_2) = (Some S_3) ->
       less_imprecise S_3 S_1.
   Proof with eauto with setoids.
     intros.
@@ -651,14 +468,11 @@ Module AGT_Spec (AGT : AGT_Inputs).
     rewrite H.
     intros elem.
     intros.
-    inversion H0.
-    destruct H1.
-    inversion H2; subst...
-    rewrite H1...
+    inversion H0...
   Qed.    
 
   Lemma meet_right : forall S_1 S_2 S_3,
-      option_eq GT_eq (meet S_1 S_2) (Some S_3) ->
+      (meet S_1 S_2) = (Some S_3) ->
       less_imprecise S_3 S_2.
   Proof with eauto with setoids.
     intros.
@@ -667,415 +481,170 @@ Module AGT_Spec (AGT : AGT_Inputs).
     rewrite H.
     intros elem.
     intros.
-    inversion H0.
-    destruct H1.
-    inversion H2; subst...
-    rewrite H1...
-  Qed.
+    inversion H0...
+  Qed.*)
 
-  Instance sigeq_rel_sym (E : Type) (P : E -> Prop) (rel : relation E) (Rec : Symmetric rel)  : Symmetric (@sig_eq _ P rel).
-  eapply sig_eq_sym.
-  eauto.
-  Defined.
-  Instance sigeq_rel_equiv (E : Type) (P : E -> Prop) (rel : relation E) (Rec : Equivalence rel)  : Equivalence (@sig_eq _ P rel).
-  Proof with eauto with setoids.
-    inversion Rec...
-  Defined.
-  Add Parametric Morphism : (relational_composition ST_eq )
-      with signature (Subseteq (sig_eq (pair_eq ST_eq ST_eq))) ==>
-                     (Subseteq (sig_eq (pair_eq ST_eq ST_eq))) ==>
-                     (Subseteq (@sig_eq _ (fun x => static_pred (fst x) (snd x)) (pair_eq ST_eq ST_eq))) as relational_composition_static_pred_mor_subset.
+  Add Parametric Morphism A P: (@relational_composition A P)
+      with signature (Included {x : A & {y : A | P x y}}) ==>
+                     (Included {x : A & {y : A | P x y}}) ==>
+                     (Included {x : A & {y : A | P x y}}) as relational_composition_static_pred_mor_subset.
   Proof with eauto with setoids.
     intros.
     all: intro elem.
     all: intros.
     all: repeat destruct  H1.
-    all: inversion H2.
-    all: do 5 destruct H3.
-    all: destruct H4.
-    all: destruct H5.
-    all: simpl in *.
-    - apply In_SetIn with (eqb := (sig_eq (pair_eq ST_eq ST_eq))) in H2...
-      rewrite H1.
-      eexists.
-      split.
-      reflexivity.
-      apply H in H3.
-      apply H0 in H4.
-      inversion H3.
-      inversion H4.
-      destruct H7.
-      destruct H8.
-      inversion H5.
-      inversion H6.
-      subst.
-      destruct x7.
-      destruct x8.
-      repeat eexists.
-      all: try match goal with
-               | [ |- Ensembles.In _ _ _ ] => eassumption
-               end.
-      all: simpl in *...
-      Unshelve.
-      all: simpl in *...
-  Qed.
-  Add Parametric Morphism : (relational_composition ST_eq )
-      with signature (Seteq (sig_eq (pair_eq ST_eq ST_eq))) ==>
-                     (Seteq (sig_eq (pair_eq ST_eq ST_eq))) ==>
-                     (Seteq (@sig_eq _ (fun x => static_pred (fst x) (snd x)) (pair_eq ST_eq ST_eq))) as relational_composition_static_pred_mor.
+    econstructor.
+    exists x2.
+    exists x3.
+    split...
+  Qed.    
+
+  Add Parametric Morphism A P: (@relational_composition A P)
+      with signature (Same_set {x : A & {y : A | P x y}}) ==>
+                     (Same_set {x : A & {y : A | P x y}}) ==>
+                     (Same_set {x : A & {y : A | P x y}}) as relational_composition_static_pred_mor.
   Proof with eauto with setoids.
     intros.
     econstructor.
     all: intro elem.
     all: intros.
     all: repeat destruct  H1.
-    all: inversion H2.
-    all: do 5 destruct H3.
-    all: destruct H4.
-    all: destruct H5.
-    all: simpl in *.
-    - apply In_SetIn with (eqb := (sig_eq (pair_eq ST_eq ST_eq))) in H2...
-      rewrite H1.
-      eexists.
-      split.
-      reflexivity.
-      rewrite H in H3.
-      rewrite H0 in H4.
-      inversion H3.
-      inversion H4.
-      destruct H7.
-      destruct H8.
-      inversion H5.
-      inversion H6.
-      subst.
-      destruct x7.
-      destruct x8.
-      repeat eexists.
-      all: try match goal with
-               | [ |- Ensembles.In _ _ _ ] => eassumption
-               end.
-      all: simpl in *...
-    - apply In_SetIn with (eqb := (sig_eq (pair_eq ST_eq ST_eq))) in H2...
-      rewrite H1.
-      eexists.
-      split.
-      reflexivity.
-      rewrite <- H in H3.
-      rewrite <- H0 in H4.
-      inversion H3.
-      inversion H4.
-      destruct H7.
-      destruct H8.
-      inversion H5.
-      inversion H6.
-      subst.
-      destruct x7.
-      destruct x8.
-      repeat eexists.
-      all: try match goal with
-               | [ |- Ensembles.In _ _ _ ] => eassumption
-               end.
-      all: simpl in *...
-
-      Unshelve.
-      all: simpl in *...
+    all: econstructor.
+    all: exists x2.
+    all: exists x3.
+    all: split...
+    eapply H...
+    eapply H0...
+    eapply H...
+    eapply H0...
   Qed.      
-
-  (* Todo: Move to Setoid_library *)
-  Lemma SetIn_and {A : Type} {eqa : relation A} `{Equivalence A eqa}:
-    forall (P Q : A -> Prop) (H' : (eqa ==> iff)%signature P Q) x,
-      SetIn eqa (fun X => P X /\ Q X) x <->
-      (SetIn eqa P x) /\ (SetIn eqa Q x).
-  Proof with eauto with setoids.
-    intros.
-    split; intros...
-    - inversion H0...
-      unfold Ensembles.In in H1.
-      destruct H1.
-      destruct H2.
-      split; exists x0...
-    - inversion H0.
-      inversion H1.
-      inversion H2.
-      destruct H3.
-      destruct H4.
-      exists x.
-      unfold Ensembles.In.
-      split.
-      reflexivity.
-      split;
-      eapply H'...
-      symmetry...
-  Qed.      
-  
-  (* Consistent transitivity and interior definition are equivalent. 
-   *)
-
-  Axiom static_pred_tele : forall s1 s2 s3,
-      static_pred s1 s2 ->
-      static_pred s1 s3 ->
-      (static_pred s2 s3 \/ static_pred s3 s2).
-
   
   Theorem ct_via_interior_def : forall T_1 T_2 T_3 T_4 ev1 ev2 ev3,
       interior T_1 T_2 ev1 ->
       interior T_3 T_4 ev2 ->
       consistent_transitivity ev1 ev2 ev3 ->
       forall m ev4 ev5 ev6,
-        option_eq GT_eq (meet (proj2_ev ev1) (proj1_ev ev2)) (Some m) ->
+        (meet (proj2_ev ev1) (proj1_ev ev2)) = (Some m) ->
         interior (proj1_ev ev1) m ev4 ->
         interior m (proj2_ev ev2) ev5 ->
         interior (proj1_ev ev4) (proj2_ev ev5) ev6 ->
         Ev_eq ev3 ev6.
   Proof with eauto with setoids.
     intros.
-    eapply gamma_ev_compat_dual.
+    econstructor.
     split; intros.
     -  apply meet_spec_1 in H2.
-       eapply gamma_completeness in H1.
+       eapply forward_completeness in H1.
        erewrite <- H1.
-       eapply subseteq_trans...
-
+       etransitivity...
        intros elem; intros...
        repeat destruct H6.
-       rewrite H6.
-       inversion H7.
-       do 5 destruct H8.
-       destruct H9.
-       destruct H10.
-
-       (* What the proof needs to obtain now is that the first projection of x is on the left and the second projection is on the right. *)
-       econstructor.
-       split.
-       reflexivity.
-       unfold Ensembles.In.
        split.
        + apply gc_ev_soundness in H3.
-         inversion H10; subst.
-         rewrite H14.
-         change a' with
-             (fst (proj1_sig (exist (fun x => static_pred (fst x) (snd x)) (a', b') x3))).
+         change (projT1 elem) with (projT1 (existT (fun x => {y | static_pred x y}) (projT1 elem) (exist _ _ x0))).
          eapply gamma_ev_spec_l.
          eapply H3.
-         eexists.
          split.
-         reflexivity.
-         unfold Ensembles.In.
-         split.
-         * apply gamma_ev_spec_l in H8...
+         * eapply gamma_ev_spec_l in H6...
          * rewrite H2.
-           simpl.
-           eapply Intersection_SetIn...
-           -- eapply gamma_ev_spec_r in H8...
-           -- rewrite <- H16.
-              inversion H11; subst...
-              rewrite H15.
-              eapply gamma_ev_spec_l in H9...
+           econstructor.
+           -- eapply gamma_ev_spec_r in H6...
+           -- eapply gamma_ev_spec_l in H7...
        + apply gc_ev_soundness in H4.
-         inversion H11; subst.
-         rewrite H16.
-         change b' with
-             (snd (proj1_sig (exist (fun x => static_pred (fst x) (snd x)) (a', b') x4))).
+         change (proj1_sig (projT2 elem))
+                with (proj1_sig (projT2 (existT (fun x => {y | static_pred x y}) _ (exist _ _ x1)))).
          eapply gamma_ev_spec_r.
          eapply H4.
-         eexists.
-         split.
-         reflexivity.
-         unfold Ensembles.In.
-         split.
-         * rewrite H2.
-           simpl.
-           eapply Intersection_SetIn...
-           -- rewrite <- H14.
-              inversion H10; subst...
-              rewrite H18.
-              eapply gamma_ev_spec_r in H8...
-           -- eapply gamma_ev_spec_l in H9...
-         * apply gamma_ev_spec_r in H9...
-    -  apply gamma_completeness in H1.
-      apply meet_spec_1 in H2.
+         split...
+         rewrite H2.
+         econstructor.
+         * eapply gamma_ev_spec_r in H6...
+         * eapply gamma_ev_spec_l in H7...
+    - apply meet_spec_1 in H2.
+      apply forward_completeness in H1.
       eapply gc_ev_optimality...
-      rewrite <- H1.
-      eapply subseteq_trans with (y:= (relational_composition ST_eq (gamma_ev ev4) (gamma_ev ev5)))...
-       +
-         eapply subseteq_trans...          
-          eapply closedness...
-       + eapply gc_ev_optimality with (S:= ev1) in H3.
-         eapply gc_ev_optimality with (S:= ev2) in H4.
-         eapply relational_composition_static_pred_mor_subset...
-         all: intros elem.
-         all: intros.
-         all: do 2 destruct H6.
-         all: destruct elem; destruct x; simpl in *.
-         all: destruct H7.
-         all: simpl in *.
-         rewrite H2 in H7.
-         2: rewrite H2 in H8.
-         apply Intersection_SetIn_inv in H7...
-         2: apply Intersection_SetIn_inv in H8...
-         destruct H7.
-         2: destruct H8.
-         all: eapply gamma_ev_spec'.
-         all: destruct H6.
-         all: simpl in *; subst...
-         all: try rewrite H6...
-         all: rewrite H10...
+      rewrite <-H1.
+      clear H1.
+      clear H5.
+      intros elem Hin.
+      destruct Hin.
+      destruct elem.
+      destruct s.      
+      eapply proj1_ev_spec in H1.
+      do 2 destruct H1.
+      eapply gc_ev_optimality with (S:=ev1) in H1.
+      (*3 : eapply ev_self_interior.*)
+      3 : eapply H3.
+      eapply proj2_ev_spec in H5.
+      do 2 destruct H5.
+      eapply gc_ev_optimality with (S:=ev2) in H5.
+      (*3 : eapply ev_self_interior.*)
+      3 : eapply H4.
+      + eapply closedness...
+        unfold sigT2_eq...
+        Unshelve.
+        transitivity x...
+      + intros elem Hin.
+        destruct Hin.
+        destruct elem.
+        destruct s0.
+        eapply gamma_ev_proof_irrelevance...
+        rewrite H2 in H6.
+        inversion H6...
+      + intros elem Hin.
+        destruct Hin.
+        destruct elem.
+        destruct s0.
+        eapply gamma_ev_proof_irrelevance...
+        rewrite H2 in H7.
+        inversion H7...
 Qed.         
+
+  (* (* I am not sure what this note was for anymore, but I'll keep it for now in case I remember: *)
+     Now, after we have done the equivalence proof, we can revisit the
+     "gamma completeness suffices for associativity" proof : 
+
+     BIG NOTE: I might be able to get away WITHOUT having to prove alpha is partial function
+     If I keep defining evidence equivalence as extensionality of gammas.
+*)
   
   Theorem rc_assoc : forall (s1 s2 s3 : Ev_static_set),
-      Seteq (sig_eq (pair_eq ST_eq ST_eq))
-            (relational_composition ST_eq (relational_composition ST_eq s1 s2) s3)
-            (relational_composition ST_eq s1 (relational_composition ST_eq s2 s3)).
-
+      Same_set
+        _
+        (relational_composition (relational_composition s1 s2) s3)
+        (relational_composition s1 (relational_composition s2 s3)).
   Proof with eauto with setoids.
     intros.
     split; intros elem; intros.
     - inversion H.
       destruct H0.
-      exists x; split...
-      clear H0.
-      clear H.
-      clear elem.
-      inversion H1.
-      clear H1.
-      do 5 destruct H.
+      do 5 destruct H0.
       destruct H0.
-      destruct H1.
       (* Now I need to find the point in between, the one that escapes s1. *)
-      inversion H.
-      clear H.
-      destruct H3.
-      inversion H3.
-      clear H3.
-      destruct H4.
-      do 4 destruct H3.
-      destruct H4.
-      destruct H5.
-      (* Now's the key. *)
-      unfold Ensembles.In.
-      unfold relational_composition at 1.
-      unfold sig_eq in H.
-      destruct x5.
-      inversion H; inversion H1; inversion H2; subst...
-      inversion H14; subst; simpl in *.
-      clear H14.
-      inversion H6.
-      inversion H5.
-      subst.
       simpl in *.
-      do 5 eexists.
-      split.
-      eassumption.
-      split.
-      2 : {
-        split.
-        etransitivity;[|eassumption].
-        econstructor.
-        etransitivity...
-        symmetry.
-        reflexivity.
-        reflexivity.
-      }
-      eexists (exist _ (_, _) _).
-      split.
-      2 : {
-        exists x0.
-        do 5 eexists.
-        eassumption.
-        split.
-        eassumption.
-        split.
-        all: econstructor.
-        all: simpl in *.
-        3 : eassumption.
-        etransitivity;[|eassumption].
-        reflexivity.
-        all: try eassumption.
-        etransitivity...
-      }
-      unfold sig_eq.
-      reflexivity.
-    -inversion H.
-      destruct H0.
-      exists x; split...
-      clear H0.
-      clear H.
-      clear elem.
-      inversion H1.
-      clear H1.
-      do 5 destruct H.
-      destruct H0.
-      destruct H1.
-      (* Now I need to find the point in between, the one that escapes s1. *)
-      inversion H0.
-      clear H0.
-      destruct H3.
-      inversion H3.
-      clear H3.
-      destruct H4.
-      do 4 destruct H3.
-      destruct H4.
-      destruct H5.
-      (* Now's the key. *)
-      unfold Ensembles.In.
-      unfold relational_composition at 1.
-      unfold sig_eq in H0.
-      destruct x5.
-      inversion H0; inversion H1; inversion H2; subst...
-      inversion H19; subst; simpl in *.
-      clear H19.
-      inversion H6.
-      inversion H5.
-      subst.
+      exists x2.
+      exists x3.
+      exists (static_pred_trans _ _ _ x4 x1).
+      split...
+      exists x.
+      simpl.
+      exists x4.
+      exists x1.
+      split...
+    - inversion H.
+      do 3 destruct H0.
+      do 4 destruct H1.
       simpl in *.
-      do 5 eexists.
-      split.
-      eapply In_SetIn.
-      idtac...
-      econstructor.
-      2 : {
-        split.
-        eassumption.
-        split.
-        reflexivity.
-        econstructor...
-      }
-      do 5 eexists.
-      eassumption.
-      split.
-      eassumption.
-      split.
-      all: econstructor.
-      all: simpl in *.
-      all: try eassumption.
-      etransitivity...
-
-      Unshelve.
-      all: simpl in *.
-      rewrite H20.
-      etransitivity;[|eassumption].
-      rewrite H11.
-      rewrite <- H18.
-      rewrite H15.
-      rewrite H8.
-      rewrite H14...
-
-      rewrite H11.
-      rewrite H20.
-      etransitivity;[|eassumption].
-      rewrite <- H18.
-      rewrite H15.
-      rewrite H8.
-      rewrite H14...
-
-      rewrite H13.
-      etransitivity;[eassumption|].
-      rewrite <- H15.
-      rewrite H18.
-      rewrite H22.
-      rewrite H7.
-      rewrite H19...
-Qed.      
+      exists x2.
+      exists (static_pred_trans _ _ _ x0 x3).
+      exists x4.
+      split...
+      exists x.
+      simpl.
+      exists x0.
+      exists x3.
+      split...
+  Qed.
 
   Theorem ct_assoc : forall (e1 e2 e3 e12 e23 el er: Ev),
       consistent_transitivity e1 e2 e12 ->
@@ -1085,11 +654,11 @@ Qed.
       Ev_eq el er.
   Proof.
     intros.
-    eapply gamma_completeness in H.
-    eapply gamma_completeness in H0.
-    eapply gamma_completeness in H1.
-    eapply gamma_completeness in H2.
-    eapply gamma_ev_compat_dual.
+    eapply forward_completeness in H.
+    eapply forward_completeness in H0.
+    eapply forward_completeness in H1.
+    eapply forward_completeness in H2.
+    econstructor.
     rewrite <- H2.
     rewrite <- H0.
     rewrite <- H1.
@@ -1103,7 +672,7 @@ Qed.
                      Thus the ec_assoc does not have
                      counterexamples because of "too strong assumptions in premises"
                      (Also must do symmetric check, in ec_r_exists)
-   *)
+
   (* These were parameters but now they fall out by other parameters that are simpler to declare. *)
   Theorem alpha_complete : forall S, (*Required for sanity checks only *)
       Inhabited _ S ->
@@ -1123,8 +692,131 @@ Qed.
     inversion H.
     eauto.
   Qed.
-  
-End AGT_Spec.
+
+    
+
+  Theorem ec_r_exists : forall e1 e2 e12 e3 e4,
+      consistent_transitivity e1 e2 e12 ->
+      consistent_transitivity e12 e3 e4 ->
+      exists e5, consistent_transitivity e2 e3 e5.
+  Proof with eauto with setoids.
+    intros.
+    unfold consistent_transitivity in *.
+    unfold relational_composition in H0.
+    apply gc_ev_optimality with (S:=e2) in H.
+    enough (exists e, alpha_ev (relational_composition (gamma_ev e12) (gamma_ev e3)) e).
+    - destruct H1.
+      pose proof (gc_ev_soundness) as sound.
+      pose proof (gc_ev_optimality) as opt.
+      eapply gc_ev_soundness in H1.
+      
+    
+    
+
+    
+    inversion H.
+    
+    apply forward_completeness in H.
+    apply forward_completeness in H0.
+    subst.
+    enough (Inhabited _ (relational_composition (gamma_ev e2) (gamma_ev e3))).
+    unfold consistent_transitivity.
+    destruct (all_bigger_types_has_greatest_lower_bound
+         (SetMap (relational_composition (gamma_ev e2) (gamma_ev e3))
+                 (fun x : {x : ST & {y : ST | static_pred x y}} =>
+                    match x with
+                     | existT _ x0 _ => x0
+                    end))).
+    destruct (all_bigger_types_has_greatest_lower_bound
+      (SetMap (relational_composition (gamma_ev e2) (gamma_ev e3))
+                 (fun x : {x : ST & {y : ST | static_pred x y}} =>
+                    match x with
+                    | existT _ _ (exist _ x1 _) => x1
+                    end))).
+    econstructor.
+    inversion H2.
+
+    
+      econstructor.
+
+    - (* Use forward_completeness here *)
+      
+      simpl in *.
+      inversion H6.
+      inversion H1.
+      destruct x.
+      repeat destruct H.
+      simpl in *.
+      rewrite rc_assoc in H4.
+      inversion H4.
+      repeat destruct H.
+      econstructor; eauto.
+      Unshelve.
+      eassumption.
+      simpl.
+      econstructor; eauto.
+      inversion H4.
+      destruct x1.
+      repeat econstructor; eauto.
+      econstructor; eauto.
+      inversion H4.
+      destruct x1.
+      repeat econstructor; eauto.
+  Qed.
+    
+  Theorem ec_l_exists : forall e1 e2 e3 e23 e4,
+      consistent_transitivity e2 e3 e23 ->
+      consistent_transitivity e1 e23 e4 ->
+      exists e5, consistent_transitivity e1 e2 e5.
+  Proof.
+    intros.
+    inversion H.
+    inversion H0.
+    pose proof (forward_completeness _ _ _ H).
+    pose proof (forward_completeness _ _ _ H0).
+    clear H.
+    clear H0.
+    (* Note: It's necessary to do this BEFORE the substitution !*)
+    clear H10.
+    rewrite <- H11 in H6.
+    rewrite <- rc_assoc in H6.
+    subst.
+    enough (Inhabited _ (relational_composition (gamma_ev e1) (gamma_ev e2))).
+    destruct (all_bigger_types_has_greatest_lower_bound
+      (SetPMap (relational_composition (gamma_ev e1) (gamma_ev e2))
+         (fun x : {x : ST * ST | static_pred (fst x) (snd x)} =>
+          let (x0, _) := x in Some (fst x0)))).
+    destruct (all_bigger_types_has_greatest_lower_bound
+      (SetPMap (relational_composition (gamma_ev e1) (gamma_ev e2))
+         (fun x : {x : ST * ST | static_pred (fst x) (snd x)} =>
+          let (x0, _) := x in Some (snd x0)))).
+
+    econstructor.
+    econstructor.
+    inversion H6.
+    - unfold In in H.
+      unfold relational_composition at 1 in H.
+      destruct x.
+      destruct H.
+      destruct H.
+      destruct H.
+      destruct H.
+      econstructor; eauto.
+      Unshelve.
+      eassumption.
+      simpl.
+      econstructor; eauto.
+      inversion H.
+      destruct x1.
+      repeat econstructor; eauto.
+      econstructor; eauto.
+      inversion H.
+      destruct x1.
+      repeat econstructor; eauto.
+Qed.
+*)
+    
+End AGT_Spec_simpl.
 
 
     (* Local Variables: *)
