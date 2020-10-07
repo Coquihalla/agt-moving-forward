@@ -876,18 +876,280 @@ Proof with eauto with math.
   inversion H; subst; simpl...
 Qed.  
 
-(* These two pending lemmas are hard to prove in Coq but are straightforward to prove by hand.*)
+Lemma domain_treelike_le : forall hd tl,
+    Nat.max (S (length tl)) (fold_right Nat.max 0 (map domain_mapping (hd :: tl)))
+    <= Nat.max (domain_mapping hd) ( S (Nat.max (length tl) (fold_right Nat.max 0 (map domain_mapping tl)))).
+Proof with eauto with math.
+  intros.
+  simpl.
+  generalize dependent hd.
+  induction tl; simpl; intros...
+Qed.
+
+Lemma length_zip_fill{A B C : Type}: forall f g h l l0,
+    length (@zip_fill A B C  f g h l l0) = Nat.max (length l) (length l0).
+Proof with eauto with math.
+  induction l; induction l0; simpl in *...
+  specialize (IHl []); simpl in *...
+  specialize (IHl l0); simpl in *...
+Qed.  
+
+
 Lemma meet_domain_bound : forall S_1 S_2 S_3,
     g_meet S_1 S_2 = Some S_3 ->
     domain S_3 <= Nat.max (domain S_1) (domain S_2).
 Proof with eauto with math.
-  Admitted.
+  intros.
+  generalize dependent S_2.
+  generalize dependent S_1.
+  eapply GType_good_ind_2 with (s := S_3)
+                               (P0 := fun l =>
+                                        forall l0 l1 a0 a1,
+                                          match filter_error (zip_fill (g_meet_mapping_d a0) (g_meet_mapping_d a1) g_meet_mapping l0 l1) with
+                                          | Some l2 => Some (match a0, a1 with
+                                                              | Row, Row => GRow
+                                                              | _, _ => GRec
+                                                              end l2)
+  | None => None
+  end = Some (match a0, a1 with
+              | Row, Row => GRow
+              | _, _ => GRec
+              end l) ->
+  Nat.max (length l) (fold_right Nat.max 0 (map domain_mapping l)) <=
+  Nat.max (Nat.max (length l0) (fold_right Nat.max 0 (map domain_mapping l0)))
+    (Nat.max (length l1) (fold_right Nat.max 0 (map domain_mapping l1))))
+.
+  all: try solve [destruct S_1; destruct S_2; simpl; intros; try congruence; inversion H; eauto with math].
+  - intros.
+    simpl.
+    destruct S_0; destruct S_4; simpl in *; try congruence; eauto with math.
+    all: repeat match goal with
+                | [ H : match ?A with
+                        | Some _ => _
+                        | None => _
+                        end = _ |- _] =>
+                  destruct A eqn:?; try congruence
+                end.
+    inversion H1; subst.
+    apply H in Heqo.
+    apply H0 in Heqo0...
+  - intros l H.
+    simpl.
+    destruct S_1; destruct S_2; simpl; try congruence.
+    all: try eapply H...
+    (* The rest are contradictions! *)
+    all: repeat match goal with
+                | [ |- context[match ?A with
+                               | Some _ => _
+                               | None => _
+                               end]] =>
+                  destruct A eqn:?; try congruence
+                end.
+  - intros l H.
+    simpl.
+    destruct S_1; destruct S_2; simpl; try congruence.
+    all: try eapply H...
+    (* The rest are contradictions! *)
+    all: repeat match goal with
+                | [ |- context[match ?A with
+                               | Some _ => _
+                               | None => _
+                               end]] =>
+                  destruct A eqn:?; try congruence
+                end.
+  - intros.
+    simpl...
+  - intros.
+    all: destruct l0;[remember [] as l0 |]; (destruct l1; [remember [] as l1 |]); try congruence.
+    (* We'll do cases separately as zip_fill behaves differently *)
+    + subst; simpl in *...
+      destruct a0; destruct a1; simpl in *; try congruence.
+    + subst; simpl in *...
+      all: repeat match goal with
+                | [ H : match ?A with
+                        | Some _ => _
+                        | None => _
+                        end = _ |- _ ] =>
+                  destruct A eqn:?; try congruence
+                end.
+      inversion Heqo; subst.
+      pose proof (length_zip_fill (g_meet_mapping_d a0) (g_meet_mapping_d a1) g_meet_mapping [] l1).
+      pose proof (filter_error_length _ _ Heqo1).
+      specialize (H [] l1 a0 a1).
+      simpl in H.
+      rewrite Heqo1 in H.
+      destruct a1; destruct a0; simpl in H0; inversion H0; subst.
+      all: specialize (H eq_refl); simpl in *...
+    + subst; simpl in *...
+      all: repeat match goal with
+                | [ H : match ?A with
+                        | Some _ => _
+                        | None => _
+                        end = _ |- _ ] =>
+                  destruct A eqn:?; try congruence
+                end.
+      inversion Heqo; subst.
+      pose proof (length_zip_fill (g_meet_mapping_d a0) (g_meet_mapping_d a1) g_meet_mapping l0 []).
+      pose proof (filter_error_length _ _ Heqo1).
+      specialize (H l0 [] a0 a1).
+      simpl in H.
+      rewrite Heqo1 in H.
+      destruct a1; destruct a0; simpl in H0; inversion H0; subst.
+      all: specialize (H eq_refl); simpl in *...
+    + subst; simpl in *...
+      all: repeat match goal with
+                | [ H : match ?A with
+                        | Some _ => _
+                        | None => _
+                        end = _ |- _ ] =>
+                  destruct A eqn:?; try congruence
+                end.
+      inversion Heqo; subst.
+      pose proof (length_zip_fill (g_meet_mapping_d a0) (g_meet_mapping_d a1) g_meet_mapping l0 l1).
+      pose proof (filter_error_length _ _ Heqo1).
+      specialize (H l0 l1 a0 a1).
+      simpl in H.
+      rewrite Heqo1 in H.
+      destruct a1; destruct a0; simpl in H0; inversion H0; subst.
+      all: specialize (H eq_refl); simpl in *...
+  - intros.
+    all: destruct l0;[remember [] as l0 |]; (destruct l1; [remember [] as l1 |]); try congruence.
+    (* We'll do cases separately as zip_fill behaves differently *)
+    + subst; simpl in *...
+      destruct a0; destruct a1; simpl in *; try congruence.
+    + subst; simpl in *...
+      all: repeat match goal with
+                | [ H : match ?A with
+                        | Some _ => _
+                        | None => _
+                        end = _ |- _ ] =>
+                  destruct A eqn:?; try congruence
+                end.
+      inversion Heqo; subst.
+      pose proof (length_zip_fill (g_meet_mapping_d a0) (g_meet_mapping_d a1) g_meet_mapping [] l1).
+      pose proof (filter_error_length _ _ Heqo1).
+      specialize (H0 [] l1 a0 a1).
+      simpl in H0.
+      rewrite Heqo1 in H0.
+      destruct a1; destruct a0; simpl in H1; inversion H1; subst.
+      all: specialize (H0 eq_refl); simpl in *...
+      all: destruct g; simpl in *...
+      all: destruct a0; simpl in *...
+      all: inversion Heqo0; subst...
+    + subst; simpl in *...
+      all: repeat match goal with
+                | [ H : match ?A with
+                        | Some _ => _
+                        | None => _
+                        end = _ |- _ ] =>
+                  destruct A eqn:?; try congruence
+                end.
+      inversion Heqo; subst.
+      pose proof (length_zip_fill (g_meet_mapping_d a0) (g_meet_mapping_d a1) g_meet_mapping l0 []).
+      pose proof (filter_error_length _ _ Heqo1).
+      specialize (H0 l0 [] a0 a1).
+      simpl in H0.
+      rewrite Heqo1 in H0.
+      destruct a1; destruct a0; simpl in H1; inversion H1; subst.
+      all: specialize (H0 eq_refl); simpl in *...
+      all: destruct g; simpl in *...
+      all: destruct a0; simpl in *...
+      all: inversion Heqo0; subst...
+    + subst; simpl in *...
+      all: repeat match goal with
+                | [ H : match ?A with
+                        | Some _ => _
+                        | None => _
+                        end = _ |- _ ] =>
+                  destruct A eqn:?; try congruence
+                end.
+      inversion Heqo; subst.
+      pose proof (length_zip_fill (g_meet_mapping_d a0) (g_meet_mapping_d a1) g_meet_mapping l0 l1).
+      pose proof (filter_error_length _ _ Heqo1).
+      specialize (H0 l0 l1 a0 a1).
+      simpl in H0.
+      rewrite Heqo1 in H0.
+      destruct a1; destruct a0; simpl in H1; inversion H1; subst.
+      all: specialize (H0 eq_refl); simpl in *...
+      all: destruct g; destruct g0; simpl in *...
+      all: destruct a0; simpl in *...
+      all: destruct a1; simpl in *...
+      all: match goal with
+           | [ H : forall _ _, g_meet _ _ = Some _ -> _,
+                 Heq : match g_meet ?g ?g0 with
+                   | Some _ => _
+                   | None => _
+                   end = Some _ |- _ ] => let H' := fresh in
+                                          destruct (g_meet g g0) eqn:H';[ | congruence];
+                                            inversion Heq; subst;
+                                              apply H in H'
+           end.
+      
+      all: rewrite H3 in H2.
+      all: clear H3.
+      all: clear Heqo.
+      all: clear H1.
+      all: clear Heqo0.
+      all: clear Heqo1.
+      all: clear H.
+      all: rewrite ?H2 in *.
+      all: clear H2.
+      (* These following two are necessary to guide lia towards the right answer faster. *)
+      all: match goal with
+           | [ |- context[Nat.max (Nat.max (S ?l) ?A) (Nat.max (S ?l0) ?B)]] =>
+             replace (Nat.max (Nat.max (S l) A) (Nat.max (S l0) B)) with
+                 (Nat.max (S (Nat.max l l0)) (Nat.max A B)) by (clear; lia)
+           end.
+      all: match goal with
+           | [ H : context[Nat.max (Nat.max (length ?l) ?A) (Nat.max (length ?l0) ?B)] |- _] =>
+             replace (Nat.max (Nat.max (length l) A) (Nat.max (length l0) B)) with
+                 (Nat.max ( (Nat.max (length l) (length l0))) (Nat.max A B)) in H by (clear; lia)
+           end.
+      all: remember (Nat.max (length l0) (length l1)).
+      all: lia.
+Qed.
+
+
 Lemma I_domain_bound : forall S_1 S_2 ev,
     I S_1 S_2 ev ->
     domain_ev ev <= Nat.max (domain S_1) (domain S_2).
 Proof with eauto with math.
-Admitted.
-                                 
+  intros.
+  eapply I_good_ind with (g := S_1) (g0 := S_2) (e := ev)
+                         (P0 := fun m m0 p H =>
+                                  Nat.max (domain_mapping (fst p))
+                                          (domain_mapping (snd p)) <=
+                                  Nat.max (domain_mapping m)
+                                          (domain_mapping m0))
+    (P1 := fun d_1 d_2 l_1 l_2 ev f =>
+             (Nat.max (length (fst ev)) (length (snd ev)))
+             <=
+             (Nat.max (length l_1) (length l_2)) /\
+             (Nat.max (fold_right Nat.max 0 (map domain_mapping (fst ev))) (fold_right Nat.max 0 (map domain_mapping (snd ev)))) <=
+             (Nat.max (fold_right Nat.max 0 (map domain_mapping l_1)) (fold_right Nat.max 0 (map domain_mapping l_2)))); eauto.
+  all: simpl in *.
+  all: intros.
+  all: unfold domain_ev in *; simpl in *.
+  all: repeat match goal with
+              | [ |- context[Nat.max (Nat.max (length ?l) ?A) (Nat.max (length ?l0) ?B)] ] =>
+                replace (Nat.max (Nat.max (length l) A) (Nat.max (length l0) B)) with
+                    (Nat.max ( (Nat.max (length l) (length l0))) (Nat.max A B)) by (clear; lia)
+              end.
+  all: rewrite <- ?Nat.succ_max_distr.
+  all: repeat match goal with
+                | [ |- context[Nat.max (Nat.max (domain_mapping ?l) ?A) (Nat.max (domain_mapping ?l0) ?B)] ] =>
+                  replace (Nat.max (Nat.max (domain_mapping l) A) (Nat.max (domain_mapping l0) B)) with
+               (Nat.max ( (Nat.max (domain_mapping l) (domain_mapping l0))) (Nat.max A B)) by (clear; lia)
+                end.
+  all: repeat match goal with
+                | [ |- context[Nat.max (length ?l) (length ?l0)]] =>
+                  remember (Nat.max (length l) (length l0))
+                end.
+  10: destruct d_2; simpl in *.
+  9: destruct d_1; simpl in *.
+  all: lia.
+Qed.
+
 Inductive evidence_composition : Ev -> Ev -> Ev -> Prop :=
 | ec_intro : forall S_1 S_2 S_3 S_4 S_23 ev_l ev_r ev,
     g_meet S_2 S_3 = Some S_23 ->
@@ -931,7 +1193,53 @@ Proof with eauto with math.
   eapply I_domain_bound in H3.
   unfold domain_ev in *; simpl in *...
 Qed.  
+
   
+(*
+The rest of the file is trying to provide an extractable implementation.
+However, it is most definitely NOT needed to prove the bounds.
+It will likely be required later for some notion of type safety.
+
+(* The following helpers work around termination restrictions. *)
+Fixpoint init_ev_type_gdyn (x : GType) {struct x} : Ev (* never fails! *) :=
+  match x with
+  | GDyn => (GDyn, GDyn)
+  | GInt => (GInt, GInt)
+  | GBool => (GBool, GBool)
+  | GFun x_1 x_2 => (GFun (fst (init_ev_gdyn_type x_1)) (fst (init_ev_type_gdyn x_2)),
+                     GFun (snd (init_ev_gdyn_type x_1)) (snd (init_ev_type_gdyn x_2)))
+  | GRec l => (GRec (map fst (map (init_ev_mm_d) l)), GRec (map snd (map (init_ev_mm_d) l)))
+  | GRow l => (GRow (map fst (map (init_ev_mm_d) l)), GRow (map snd (map (init_ev_mm_d) l)))
+  end
+with init_ev_mm_d  (x : GType_mapping) : (GType_mapping * GType_mapping) :=
+       match x with
+       | m_missing => (m_missing, m_missing)
+       | m_map Req S' => (m_map Req (fst (init_ev_type_gdyn S')),
+                          m_map Opt (snd (init_ev_type_gdyn S')))
+       | m_map Opt S' => (m_map Opt (fst (init_ev_type_gdyn S')),
+                          m_map Opt (snd (init_ev_type_gdyn S')))
+       end
+with init_ev_gdyn_type (y : GType) {struct y} : Ev :=
+  match y with
+  | GDyn => (GDyn, GDyn)
+  | GInt => (GInt, GInt)
+  | GBool => (GBool, GBool)
+  | GFun x_1 x_2 => (GFun (fst (init_ev_type_gdyn x_1)) (fst (init_ev_gdyn_type x_2)),
+                     GFun (snd (init_ev_type_gdyn x_1)) (snd (init_ev_gdyn_type x_2)))
+  | GRec l => (GRec (map fst (map (init_ev_d_mm) l)), GRec (map snd (map (init_ev_d_mm) l)))
+  | GRow l => (GRow (map fst (map (init_ev_d_mm) l)), GRow (map snd (map (init_ev_d_mm) l)))
+  end
+with init_ev_d_mm  (x : GType_mapping) : (GType_mapping * GType_mapping) :=
+       match x with
+       | m_missing => (m_map Opt GDyn, m_missing)
+       | m_map Req S' => (m_map Req (fst (init_ev_type_gdyn S')),
+                          m_map Opt (snd (init_ev_type_gdyn S')))
+       | m_map Opt S' => (m_map Opt GDyn,
+                          m_map Opt (snd (init_ev_type_gdyn S')))
+       end
+.
+*)
+(* 
       
     (* Local Variables: *)
     (* mode: coq; *)
