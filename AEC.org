@@ -1,64 +1,45 @@
 #+TITLE: Documentation for Artifact Evaluation Committee
 #+AUTHOR: Felipe Bañados Schwerter
 
-* All math per section and mechanizations:
-  | Section | Mechanized                         | Not mechanized |
-  |---------+------------------------------------+----------------|
-  |       1 |                                    |                |
-  |       2 |                                    |                |
-  |       3 |                                    |                |
-  |       4 |                                    |                |
-  |       5 |                                    |                |
-  |       6 |                                    |                |
-  |       7 | Lem 7.1, Def 7.2, Lem 7.3, Thm 7.4 | Thm 7.5        |
-
 * List of claims
-  /This list should list all claims made in the paper, referencing the/
-  /claim in the paper, the portion in the artifact evaluating that/
-  /claim, and evaluation instructions for evaluating that claim./
+  The paper makes the following mechanization claims:
 
   1. Theorem 6.4 claims that forward-completeness suffices for
      associativity of evidence composition and that there exists a
      generalized Coq mechanization of this property.
 
+     This section has been mechanized in file
+     [[agt/AGT_Spec.v]]:
+
+    - Definition 6.1 (forward completeness) corresponds to
+      ~Parameter gamma_completeness~.
+    - Theorem 6.4 (associativity of evidence composition) corresponds
+      to ~Theorem ct_assoc~.
+
   2. Theorem 7.4 claims a bound for the size of evidence composition
      in the BRR language.  The height bounds in Lemma 7.3 and Theorem
      7.4 are proven in Coq.
 
-* Download, installation, and sanity-testing
-  /Complete instructions for obtaining a copy of the artifact/
-  /and ensuring it works./
+     This section has been mechanized in file
+     [[agt/space_efficiency_in_brr.v]]
 
-  /Helper scripts/
-
-* Evaluation instructions
-* Additional artifact description
-
-** Section 6
-   This section has been mechanized in file
-   agt/AGT_Spec.v:
-
-   - Definition 6.1 (forward completeness) corresponds to
-     ~Parameter gamma_completeness~.
-   - Theorem 6.4 (associativity of evidence composition) corresponds
-     to ~Theorem ct_assoc~.
-** Section 7
-  - Lemma 7.1 (Bound for size of Gradual Types in BRR)
-    corresponds to ~Lemma height_bound~.
-  - Definition 7.2 (Size and height of evidences in BRR)
-    has three parts:
-    - Part 1 (size of evidences) corresponds to
-      ~Definition size_ev~.
-    - Part 2 (height of evidences) corresponds to
-      ~Definition height_ev~.
-    - Part 3 (label domain of evidences) corresponds to
-      ~Definition domain_ev~.
-  - Theorem 7.3 (Height bounds in BRR) has three parts:
-    - Part 1 (bound for meet) corresponds to 
-      ~Lemma height_meet~.
-    - Part 2 (bound for initial evidence) corresponds to 
-      ~Lemma I_bound~.
-    - Part 3 (bound for composition) corresponds to
-      ~Lemma ec_bound_height~.
-  - Theorem 7.4 corresponds to ~Theorem ec_bound_size~.
+     - Lemma 7.1 (Bound for size of Gradual Types in BRR)
+       corresponds to ~Lemma height_bound~.
+     - Definition 7.2 (Size and height of evidences in BRR)
+       has three parts:
+       - Part 1 (size of evidences) corresponds to
+         ~Definition size_ev~.
+       - Part 2 (height of evidences) corresponds to
+         ~Definition height_ev~.
+       - Part 3 (label domain of evidences) corresponds to
+         ~Definition domain_ev~.
+     - Theorem 7.3 (Height bounds in BRR) has three parts:
+       - Part 1 (bound for meet) corresponds to 
+         ~Lemma height_meet~.
+       - Part 2 (bound for initial evidence) corresponds to 
+         ~Lemma I_bound~.
+       - Part 3 (bound for composition) corresponds to
+         ~Lemma ec_bound_height~.
+     - Theorem 7.4 corresponds to ~Theorem ec_bound_size~.
+      
 
