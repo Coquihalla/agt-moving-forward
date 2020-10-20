@@ -44,68 +44,21 @@ Qed.
 
 Hint Resolve appease_map : math.
 
-Fixpoint zip_fill {A B C: Type} (d1 : A) (d2 : B) (l1 : list A) (l2 : list B) (f : A -> B -> C) {struct l1} : list C.
-case_eq l1; intros.
-- exact (map (fun X => f d1 X) l2).
-- case_eq l2; intros; subst.
-  exact (map (fun X => f X d2) (a :: l)).
-  exact (f a b :: (zip_fill _ _ _ d1 d2 l l0 f)).
-Defined.
-
-Fixpoint dependent_zip_fill {A B C: Type} (d1 : A) (d2 : B) (l1 : list A) (l2 : list B) (f : forall x (H : (In x l1) + {x = d1}) y (H1 : (In y l2) + {y = d2}), C) { struct l1}  : list C.
-  refine (match l1 as l return (l = l1) -> _ with
-          | [] => fun _ => (dependent_map l2 (fun X HYP => f d1 (inright eq_refl) X (inleft HYP)))
-          | a :: l1 => fun _ => _
-          end eq_refl).
-  refine (match l2 as l return (l = l2) -> _ with
-          | [] => fun _ => (dependent_map (a :: l1) (fun X HYP => f X _ d2 (inright eq_refl)))
-          | b :: l2 => fun _ => (_ :: _)
-          end eq_refl).
-  - rewrite <- e in *.
-    left.
-    apply HYP.
-  - rewrite <- e in *.
-    rewrite <- e0 in *.
-    eapply f.
-    left.
-    left.
-    reflexivity.
-    left.
-    left.
-    reflexivity.
-  - rewrite <- e in *.
-    rewrite <- e0 in *.
-    eapply (dependent_zip_fill _ _ _ d1 d2 l1 l2).
-    intros.
-    eapply f.
-    destruct H.
-    left.
-    right.
-    eapply i.
-    right.
-    eapply e1.
-    destruct H1.
-    left.
-    right.
-    eapply i.
-    right.
-    eapply e1.
-Defined.    
-
-(* Goal of dependent zip fill is to simplify use of induction hypotheses. *)
-
-Lemma appease_zip_fill {A B C : Type} : forall (d1 : A) (d2 : B) l1 l2 f g,
-    (forall x H1 y H2, f x H1 y H2 = g x y) ->
-    @dependent_zip_fill A B C d1 d2 l1 l2 f =
-    zip_fill d1 d2 l1 l2 g.
-Proof.
-  induction l1; destruct l2; intros; simpl; eauto.
-  all: unfold eq_rect_r.
-  all: simpl.
-  all: f_equal; eauto with math.
-Qed.
-
-Hint Resolve appease_zip_fill : math.
+Definition zip_fill {A B C : Type} : (B -> C) -> (A -> C) -> (A -> B -> C) -> list A -> list B -> list C :=
+  fun d1 d2 f =>
+    fix zip_fill (l_1 : list A) : list B -> list C :=
+    match l_1 with
+    | [] => fix zf_lmt (l_2 : list B) : list C :=
+      match l_2 with
+      | [] => []
+      | hd_2 :: tl_2 => d1 hd_2 :: zf_lmt tl_2 
+      end
+    | hd_1 :: tl_1 => fun l_2 =>
+                        match l_2 with
+                        | [] => d2 hd_1 :: zip_fill tl_1 []
+                        | hd_2 :: tl_2 => f hd_1 hd_2 :: zip_fill tl_1 tl_2
+                        end
+    end.
 
 Lemma match_push_up {A B C : Type} :
   forall (f : A -> B) (g : B -> option C),

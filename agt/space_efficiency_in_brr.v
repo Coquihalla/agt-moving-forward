@@ -7,41 +7,6 @@ Require Import PoplLibraries.Mutual_wf_fix.
 
 (* This development is quite ad-hoc, but sufficient to prove gamma completeness for subtyping in the BRR system. *)
 
-Definition zip_fill {A B C : Type} : (B -> C) -> (A -> C) -> (A -> B -> C) -> list A -> list B -> list C :=
-  fun d1 d2 f =>
-    fix zip_fill (l_1 : list A) : list B -> list C :=
-    match l_1 with
-    | [] => fix zf_lmt (l_2 : list B) : list C :=
-      match l_2 with
-      | [] => []
-      | hd_2 :: tl_2 => d1 hd_2 :: zf_lmt tl_2 
-      end
-    | hd_1 :: tl_1 => fun l_2 =>
-                        match l_2 with
-                        | [] => d2 hd_1 :: zip_fill tl_1 []
-                        | hd_2 :: tl_2 => f hd_1 hd_2 :: zip_fill tl_1 tl_2
-                        end
-    end.
-
-(* Unlike the zip_fill in coquitlam, it uses a default function instead of a default value.
-   This is to appease the termination checker on default cases.
-*)
-
-Definition zip_fill_str2 {A B C : Type} : A -> B -> (A -> B -> C) -> list A -> list B -> list C :=
-  fun d1 d2 f =>
-    fix zip_fill (l_1 : list A) (l_2 : list B) {struct l_2} : list C :=
-    match l_2 with
-    | [] => (fix zf_lmt (l_1 : list A) : list C :=
-               match l_1 with
-               | [] => []
-               | hd_1 :: tl_1 => f hd_1 d2 :: zf_lmt tl_1
-               end) l_1
-    | hd_2 :: tl_2 => match l_1 with
-                      | [] => f d1 hd_2 :: (zip_fill [] tl_2)
-                      | hd_1 :: tl_1 => f hd_1 hd_2 :: zip_fill tl_1 tl_2
-                      end
-    end.
-
 Inductive Ann : Set :=
 | Opt : Ann
 | Req : Ann.
