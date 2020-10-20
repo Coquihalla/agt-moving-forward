@@ -1193,53 +1193,6 @@ Proof with eauto with math.
   eapply I_domain_bound in H3.
   unfold domain_ev in *; simpl in *...
 Qed.  
-
-  
-(*
-The rest of the file is trying to provide an extractable implementation.
-However, it is most definitely NOT needed to prove the bounds.
-It will likely be required later for some notion of type safety.
-
-(* The following helpers work around termination restrictions. *)
-Fixpoint init_ev_type_gdyn (x : GType) {struct x} : Ev (* never fails! *) :=
-  match x with
-  | GDyn => (GDyn, GDyn)
-  | GInt => (GInt, GInt)
-  | GBool => (GBool, GBool)
-  | GFun x_1 x_2 => (GFun (fst (init_ev_gdyn_type x_1)) (fst (init_ev_type_gdyn x_2)),
-                     GFun (snd (init_ev_gdyn_type x_1)) (snd (init_ev_type_gdyn x_2)))
-  | GRec l => (GRec (map fst (map (init_ev_mm_d) l)), GRec (map snd (map (init_ev_mm_d) l)))
-  | GRow l => (GRow (map fst (map (init_ev_mm_d) l)), GRow (map snd (map (init_ev_mm_d) l)))
-  end
-with init_ev_mm_d  (x : GType_mapping) : (GType_mapping * GType_mapping) :=
-       match x with
-       | m_missing => (m_missing, m_missing)
-       | m_map Req S' => (m_map Req (fst (init_ev_type_gdyn S')),
-                          m_map Opt (snd (init_ev_type_gdyn S')))
-       | m_map Opt S' => (m_map Opt (fst (init_ev_type_gdyn S')),
-                          m_map Opt (snd (init_ev_type_gdyn S')))
-       end
-with init_ev_gdyn_type (y : GType) {struct y} : Ev :=
-  match y with
-  | GDyn => (GDyn, GDyn)
-  | GInt => (GInt, GInt)
-  | GBool => (GBool, GBool)
-  | GFun x_1 x_2 => (GFun (fst (init_ev_type_gdyn x_1)) (fst (init_ev_gdyn_type x_2)),
-                     GFun (snd (init_ev_type_gdyn x_1)) (snd (init_ev_gdyn_type x_2)))
-  | GRec l => (GRec (map fst (map (init_ev_d_mm) l)), GRec (map snd (map (init_ev_d_mm) l)))
-  | GRow l => (GRow (map fst (map (init_ev_d_mm) l)), GRow (map snd (map (init_ev_d_mm) l)))
-  end
-with init_ev_d_mm  (x : GType_mapping) : (GType_mapping * GType_mapping) :=
-       match x with
-       | m_missing => (m_map Opt GDyn, m_missing)
-       | m_map Req S' => (m_map Req (fst (init_ev_type_gdyn S')),
-                          m_map Opt (snd (init_ev_type_gdyn S')))
-       | m_map Opt S' => (m_map Opt GDyn,
-                          m_map Opt (snd (init_ev_type_gdyn S')))
-       end
-.
-*)
-(* 
       
     (* Local Variables: *)
     (* mode: coq; *)
