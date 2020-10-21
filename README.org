@@ -1,8 +1,6 @@
 #+TITLE: Artifacts for paper
 
-#+BEGIN_EXPORT html
-<a href="https://zenodo.org/badge/latestdoi/301879424"><img src="https://zenodo.org/badge/301879424.svg" alt="DOI"></a>
-#+END_EXPORT
+[[https://zenodo.org/badge/latestdoi/301879424][https://zenodo.org/badge/301879424.svg]]
 
 * Mechanization claims
   The paper makes the following mechanization claims:
